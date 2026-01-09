@@ -14,6 +14,219 @@ export type Database = {
   }
   public: {
     Tables: {
+      antrian: {
+        Row: {
+          created_at: string
+          dokter_id: string
+          id: string
+          keluhan: string | null
+          no_antrian: number
+          pasien_id: string
+          status: Database["public"]["Enums"]["status_antrian"]
+          tanggal: string
+          updated_at: string
+          waktu_daftar: string
+          waktu_panggil: string | null
+          waktu_selesai: string | null
+        }
+        Insert: {
+          created_at?: string
+          dokter_id: string
+          id?: string
+          keluhan?: string | null
+          no_antrian: number
+          pasien_id: string
+          status?: Database["public"]["Enums"]["status_antrian"]
+          tanggal?: string
+          updated_at?: string
+          waktu_daftar?: string
+          waktu_panggil?: string | null
+          waktu_selesai?: string | null
+        }
+        Update: {
+          created_at?: string
+          dokter_id?: string
+          id?: string
+          keluhan?: string | null
+          no_antrian?: number
+          pasien_id?: string
+          status?: Database["public"]["Enums"]["status_antrian"]
+          tanggal?: string
+          updated_at?: string
+          waktu_daftar?: string
+          waktu_panggil?: string | null
+          waktu_selesai?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "antrian_dokter_id_fkey"
+            columns: ["dokter_id"]
+            isOneToOne: false
+            referencedRelation: "dokter"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "antrian_pasien_id_fkey"
+            columns: ["pasien_id"]
+            isOneToOne: false
+            referencedRelation: "pasien"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing: {
+        Row: {
+          antrian_id: string
+          biaya_konsultasi: number
+          biaya_obat: number
+          biaya_tindakan: number
+          catatan: string | null
+          created_at: string
+          id: string
+          kasir_id: string | null
+          metode_pembayaran:
+            | Database["public"]["Enums"]["metode_pembayaran"]
+            | null
+          no_invoice: string
+          pasien_id: string
+          status: Database["public"]["Enums"]["status_pembayaran"]
+          tanggal_bayar: string | null
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          antrian_id: string
+          biaya_konsultasi?: number
+          biaya_obat?: number
+          biaya_tindakan?: number
+          catatan?: string | null
+          created_at?: string
+          id?: string
+          kasir_id?: string | null
+          metode_pembayaran?:
+            | Database["public"]["Enums"]["metode_pembayaran"]
+            | null
+          no_invoice: string
+          pasien_id: string
+          status?: Database["public"]["Enums"]["status_pembayaran"]
+          tanggal_bayar?: string | null
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          antrian_id?: string
+          biaya_konsultasi?: number
+          biaya_obat?: number
+          biaya_tindakan?: number
+          catatan?: string | null
+          created_at?: string
+          id?: string
+          kasir_id?: string | null
+          metode_pembayaran?:
+            | Database["public"]["Enums"]["metode_pembayaran"]
+            | null
+          no_invoice?: string
+          pasien_id?: string
+          status?: Database["public"]["Enums"]["status_pembayaran"]
+          tanggal_bayar?: string | null
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_antrian_id_fkey"
+            columns: ["antrian_id"]
+            isOneToOne: false
+            referencedRelation: "antrian"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_pasien_id_fkey"
+            columns: ["pasien_id"]
+            isOneToOne: false
+            referencedRelation: "pasien"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dokter: {
+        Row: {
+          biaya_konsultasi: number | null
+          created_at: string
+          id: string
+          jadwal_praktek: string | null
+          nama: string
+          no_sip: string | null
+          no_telepon: string | null
+          spesialisasi: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          biaya_konsultasi?: number | null
+          created_at?: string
+          id?: string
+          jadwal_praktek?: string | null
+          nama: string
+          no_sip?: string | null
+          no_telepon?: string | null
+          spesialisasi?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          biaya_konsultasi?: number | null
+          created_at?: string
+          id?: string
+          jadwal_praktek?: string | null
+          nama?: string
+          no_sip?: string | null
+          no_telepon?: string | null
+          spesialisasi?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      pasien: {
+        Row: {
+          alamat: string | null
+          created_at: string
+          id: string
+          jenis_kelamin: string | null
+          nama: string
+          nik: string | null
+          no_rm: string
+          no_telepon: string | null
+          tanggal_lahir: string | null
+          updated_at: string
+        }
+        Insert: {
+          alamat?: string | null
+          created_at?: string
+          id?: string
+          jenis_kelamin?: string | null
+          nama: string
+          nik?: string | null
+          no_rm: string
+          no_telepon?: string | null
+          tanggal_lahir?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alamat?: string | null
+          created_at?: string
+          id?: string
+          jenis_kelamin?: string | null
+          nama?: string
+          nik?: string | null
+          no_rm?: string
+          no_telepon?: string | null
+          tanggal_lahir?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -38,6 +251,82 @@ export type Database = {
         }
         Relationships: []
       }
+      rekam_medis: {
+        Row: {
+          antrian_id: string
+          berat_badan: number | null
+          catatan: string | null
+          created_at: string
+          diagnosa: string | null
+          dokter_id: string
+          id: string
+          pasien_id: string
+          resep: string | null
+          suhu_tubuh: number | null
+          tanggal: string
+          tekanan_darah: string | null
+          tindakan: string | null
+          tinggi_badan: number | null
+          updated_at: string
+        }
+        Insert: {
+          antrian_id: string
+          berat_badan?: number | null
+          catatan?: string | null
+          created_at?: string
+          diagnosa?: string | null
+          dokter_id: string
+          id?: string
+          pasien_id: string
+          resep?: string | null
+          suhu_tubuh?: number | null
+          tanggal?: string
+          tekanan_darah?: string | null
+          tindakan?: string | null
+          tinggi_badan?: number | null
+          updated_at?: string
+        }
+        Update: {
+          antrian_id?: string
+          berat_badan?: number | null
+          catatan?: string | null
+          created_at?: string
+          diagnosa?: string | null
+          dokter_id?: string
+          id?: string
+          pasien_id?: string
+          resep?: string | null
+          suhu_tubuh?: number | null
+          tanggal?: string
+          tekanan_darah?: string | null
+          tindakan?: string | null
+          tinggi_badan?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rekam_medis_antrian_id_fkey"
+            columns: ["antrian_id"]
+            isOneToOne: false
+            referencedRelation: "antrian"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rekam_medis_dokter_id_fkey"
+            columns: ["dokter_id"]
+            isOneToOne: false
+            referencedRelation: "dokter"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rekam_medis_pasien_id_fkey"
+            columns: ["pasien_id"]
+            isOneToOne: false
+            referencedRelation: "pasien"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -61,6 +350,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_invoice_number: { Args: never; Returns: string }
+      get_next_antrian_number: {
+        Args: { p_dokter_id: string; p_tanggal: string }
+        Returns: number
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -75,6 +369,19 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "dokter" | "kasir"
+      metode_pembayaran:
+        | "tunai"
+        | "transfer"
+        | "kartu_debit"
+        | "kartu_kredit"
+        | "bpjs"
+      status_antrian:
+        | "menunggu"
+        | "dipanggil"
+        | "diperiksa"
+        | "selesai"
+        | "batal"
+      status_pembayaran: "pending" | "lunas" | "batal"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -203,6 +510,21 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "dokter", "kasir"],
+      metode_pembayaran: [
+        "tunai",
+        "transfer",
+        "kartu_debit",
+        "kartu_kredit",
+        "bpjs",
+      ],
+      status_antrian: [
+        "menunggu",
+        "dipanggil",
+        "diperiksa",
+        "selesai",
+        "batal",
+      ],
+      status_pembayaran: ["pending", "lunas", "batal"],
     },
   },
 } as const
