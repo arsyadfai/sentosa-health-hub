@@ -7,8 +7,18 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import PasienPage from "./pages/admin/PasienPage";
+import DokterPage from "./pages/admin/DokterPage";
+import AntrianPage from "./pages/admin/AntrianPage";
+import LaporanPage from "./pages/admin/LaporanPage";
 import DokterDashboard from "./pages/dokter/DokterDashboard";
+import AntrianDokterPage from "./pages/dokter/AntrianDokterPage";
+import PeriksaPage from "./pages/dokter/PeriksaPage";
+import RiwayatPage from "./pages/dokter/RiwayatPage";
 import KasirDashboard from "./pages/kasir/KasirDashboard";
+import TagihanPage from "./pages/kasir/TagihanPage";
+import BayarPage from "./pages/kasir/BayarPage";
+import RiwayatTransaksiPage from "./pages/kasir/RiwayatTransaksiPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,22 +36,22 @@ const App = () => (
             
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/pasien" element={<AdminDashboard />} />
-            <Route path="/admin/dokter" element={<AdminDashboard />} />
-            <Route path="/admin/antrian" element={<AdminDashboard />} />
-            <Route path="/admin/laporan" element={<AdminDashboard />} />
+            <Route path="/admin/pasien" element={<PasienPage />} />
+            <Route path="/admin/dokter" element={<DokterPage />} />
+            <Route path="/admin/antrian" element={<AntrianPage />} />
+            <Route path="/admin/laporan" element={<LaporanPage />} />
             
             {/* Dokter Routes */}
             <Route path="/dokter" element={<DokterDashboard />} />
-            <Route path="/dokter/antrian" element={<DokterDashboard />} />
-            <Route path="/dokter/periksa" element={<DokterDashboard />} />
-            <Route path="/dokter/riwayat" element={<DokterDashboard />} />
+            <Route path="/dokter/antrian" element={<AntrianDokterPage />} />
+            <Route path="/dokter/periksa" element={<PeriksaPage />} />
+            <Route path="/dokter/riwayat" element={<RiwayatPage />} />
             
             {/* Kasir Routes */}
             <Route path="/kasir" element={<KasirDashboard />} />
-            <Route path="/kasir/tagihan" element={<KasirDashboard />} />
-            <Route path="/kasir/bayar" element={<KasirDashboard />} />
-            <Route path="/kasir/riwayat" element={<KasirDashboard />} />
+            <Route path="/kasir/tagihan" element={<TagihanPage />} />
+            <Route path="/kasir/bayar" element={<BayarPage />} />
+            <Route path="/kasir/riwayat" element={<RiwayatTransaksiPage />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
