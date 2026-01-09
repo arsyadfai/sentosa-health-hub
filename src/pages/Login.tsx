@@ -1,41 +1,41 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { UserRole } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, ShieldCheck, Stethoscope, CreditCard, Eye, EyeOff } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Activity, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-const roles: { value: UserRole; label: string; icon: React.ElementType; description: string }[] = [
-  { value: 'admin', label: 'Admin', icon: ShieldCheck, description: 'Kelola sistem klinik' },
-  { value: 'dokter', label: 'Dokter', icon: Stethoscope, description: 'Periksa pasien' },
-  { value: 'kasir', label: 'Kasir', icon: CreditCard, description: 'Kelola pembayaran' },
-];
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('admin');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const [isSettingUp, setIsSettingUp] = useState(false);
+  const { login, isAuthenticated, user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && user) {
+      navigate(`/${user.role}`);
+    }
+  }, [isAuthenticated, user, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const success = await login(email, password, selectedRole);
-      if (success) {
+      const result = await login(email, password);
+      if (result.success) {
         toast.success('Login berhasil!');
-        navigate(`/${selectedRole}`);
+        // Navigation will be handled by useEffect
       } else {
-        toast.error('Email atau password salah');
+        toast.error(result.error || 'Email atau password salah');
       }
     } catch (error) {
       toast.error('Terjadi kesalahan saat login');
@@ -43,6 +43,34 @@ export default function Login() {
       setIsLoading(false);
     }
   };
+
+  const setupDemoAccounts = async () => {
+    setIsSettingUp(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('setup-demo-accounts');
+      
+      if (error) {
+        toast.error('Gagal membuat akun demo');
+        console.error(error);
+      } else {
+        toast.success('Akun demo berhasil dibuat!');
+        console.log('Demo accounts setup:', data);
+      }
+    } catch (error) {
+      toast.error('Terjadi kesalahan');
+      console.error(error);
+    } finally {
+      setIsSettingUp(false);
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -100,34 +128,6 @@ export default function Login() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Role Selector */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Pilih Role</Label>
-                <div className="grid grid-cols-3 gap-3">
-                  {roles.map((role) => (
-                    <button
-                      key={role.value}
-                      type="button"
-                      onClick={() => setSelectedRole(role.value)}
-                      className={cn(
-                        'flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200',
-                        selectedRole === role.value
-                          ? 'border-primary bg-primary/5 text-primary'
-                          : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                      )}
-                    >
-                      <role.icon
-                        className={cn(
-                          'h-6 w-6',
-                          selectedRole === role.value ? 'text-primary' : 'text-muted-foreground'
-                        )}
-                      />
-                      <span className="text-sm font-medium">{role.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Email */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -166,15 +166,50 @@ export default function Login() {
               </div>
 
               <Button type="submit" className="w-full h-11 text-base" disabled={isLoading}>
-                {isLoading ? 'Memproses...' : 'Masuk'}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Memproses...
+                  </>
+                ) : (
+                  'Masuk'
+                )}
               </Button>
 
               {/* Demo Credentials */}
-              <div className="rounded-lg bg-muted/50 p-4 text-center">
-                <p className="text-sm text-muted-foreground">
-                  <span className="font-medium">Demo:</span> Gunakan password{' '}
-                  <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">demo123</code>
-                </p>
+              <div className="rounded-lg bg-muted/50 p-4 space-y-3">
+                <p className="text-sm font-medium text-foreground text-center">Akun Demo:</p>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex justify-between">
+                    <span>Admin:</span>
+                    <code className="text-xs">admin@sentosa.id / admin123</code>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Dokter:</span>
+                    <code className="text-xs">dokter@sentosa.id / dokter123</code>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Kasir:</span>
+                    <code className="text-xs">kasir@sentosa.id / kasir123</code>
+                  </div>
+                </div>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  className="w-full mt-2"
+                  onClick={setupDemoAccounts}
+                  disabled={isSettingUp}
+                >
+                  {isSettingUp ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Membuat akun...
+                    </>
+                  ) : (
+                    'Buat Akun Demo'
+                  )}
+                </Button>
               </div>
             </form>
           </CardContent>
