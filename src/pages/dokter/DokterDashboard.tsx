@@ -5,42 +5,83 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ClipboardList, UserCheck, Clock, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
-
-const stats = [
-  { title: 'Antrian Hari Ini', value: 12, icon: ClipboardList, variant: 'primary' as const },
-  { title: 'Sudah Diperiksa', value: 5, icon: UserCheck, variant: 'success' as const },
-  { title: 'Menunggu', value: 7, icon: Clock, variant: 'warning' as const },
-  { title: 'Selesai', value: 5, icon: CheckCircle, variant: 'info' as const },
-];
-
-const todayQueue = [
-  { nomorAntrian: 'A-006', namaPasien: 'Ani Wulandari', keluhan: 'Sakit kepala dan pusing', waktu: '10:00', status: 'Menunggu' as const },
-  { nomorAntrian: 'A-007', namaPasien: 'Budi Prasetyo', keluhan: 'Demam tinggi sejak 2 hari', waktu: '10:15', status: 'Menunggu' as const },
-  { nomorAntrian: 'A-008', namaPasien: 'Citra Dewi', keluhan: 'Batuk berdahak', waktu: '10:30', status: 'Menunggu' as const },
-  { nomorAntrian: 'A-005', namaPasien: 'Deni Saputra', keluhan: 'Nyeri sendi lutut', waktu: '09:45', status: 'Diperiksa' as const },
-];
-
-const recentPatients = [
-  { nama: 'Eka Putri', diagnosa: 'ISPA', waktu: '09:30' },
-  { nama: 'Fajar Rahman', diagnosa: 'Gastritis', waktu: '09:00' },
-  { nama: 'Gita Sari', diagnosa: 'Hipertensi', waktu: '08:30' },
-  { nama: 'Hendra Wijaya', diagnosa: 'Diabetes Type 2', waktu: '08:00' },
-];
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function DokterDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const today = new Date().toISOString().split('T')[0];
 
-  const today = new Date().toLocaleDateString('id-ID', {
+  // Fetch today's queue for this doctor (or all if not linked)
+  const { data: antrianToday = [], isLoading } = useQuery({
+    queryKey: ['dokter-antrian-today', today],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('antrian')
+        .select(`
+          *,
+          pasien:pasien_id(id, nama, no_rm)
+        `)
+        .eq('tanggal', today)
+        .order('no_antrian');
+      return data || [];
+    },
+  });
+
+  // Fetch recent completed examinations
+  const { data: recentPatients = [] } = useQuery({
+    queryKey: ['dokter-recent-patients'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('rekam_medis')
+        .select(`
+          id,
+          diagnosa,
+          created_at,
+          pasien:pasien_id(nama)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(4);
+      return data || [];
+    },
+  });
+
+  const todayFormatted = new Date().toLocaleDateString('id-ID', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
 
+  const totalToday = antrianToday.length;
+  const selesai = antrianToday.filter((a: any) => a.status === 'selesai').length;
+  const menunggu = antrianToday.filter((a: any) => ['menunggu', 'dipanggil'].includes(a.status)).length;
+  const diperiksa = antrianToday.filter((a: any) => a.status === 'diperiksa').length;
+
+  const stats = [
+    { title: 'Antrian Hari Ini', value: totalToday, icon: ClipboardList, variant: 'primary' as const },
+    { title: 'Sudah Diperiksa', value: selesai, icon: UserCheck, variant: 'success' as const },
+    { title: 'Menunggu', value: menunggu, icon: Clock, variant: 'warning' as const },
+    { title: 'Sedang Diperiksa', value: diperiksa, icon: CheckCircle, variant: 'info' as const },
+  ];
+
+  const activeQueue = antrianToday
+    .filter((a: any) => ['menunggu', 'dipanggil', 'diperiksa'].includes(a.status))
+    .map((a: any) => ({
+      id: a.id,
+      nomorAntrian: `A-${String(a.no_antrian).padStart(3, '0')}`,
+      namaPasien: a.pasien?.nama || 'Unknown',
+      keluhan: a.keluhan || '-',
+      waktu: new Date(a.waktu_daftar).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      status: a.status === 'diperiksa' ? 'Diperiksa' as const : 'Menunggu' as const,
+      antrianId: a.id,
+    }));
+
   return (
-    <DashboardLayout title={`Selamat Datang, ${user?.nama}`} subtitle={today}>
+    <DashboardLayout title={`Selamat Datang, ${user?.nama || 'Dokter'}`} subtitle={todayFormatted}>
       {/* Stats */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
         {stats.map((stat) => (
@@ -52,16 +93,30 @@ export default function DokterDashboard() {
         {/* Queue */}
         <div className="lg:col-span-2 space-y-4">
           <h2 className="text-lg font-semibold text-foreground">Antrian Pasien Hari Ini</h2>
-          <div className="space-y-3">
-            {todayQueue.map((queue) => (
-              <QueueCard
-                key={queue.nomorAntrian}
-                {...queue}
-                onAction={() => navigate('/dokter/periksa')}
-                actionLabel={queue.status === 'Menunggu' ? 'Periksa' : 'Lanjutkan'}
-              />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-24 w-full" />
+              ))}
+            </div>
+          ) : activeQueue.length > 0 ? (
+            <div className="space-y-3">
+              {activeQueue.map((queue: any) => (
+                <QueueCard
+                  key={queue.id}
+                  {...queue}
+                  onAction={() => navigate(`/dokter/periksa?antrian_id=${queue.antrianId}`)}
+                  actionLabel={queue.status === 'Menunggu' ? 'Periksa' : 'Lanjutkan'}
+                />
+              ))}
+            </div>
+          ) : (
+            <Card className="shadow-card">
+              <CardContent className="flex items-center justify-center py-12 text-muted-foreground">
+                <p>Tidak ada antrian aktif saat ini</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Recent Patients */}
@@ -70,18 +125,29 @@ export default function DokterDashboard() {
             <CardTitle className="text-lg font-semibold">Pasien Terakhir Diperiksa</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recentPatients.map((patient, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between pb-4 border-b border-border/50 last:border-0 last:pb-0"
-              >
-                <div>
-                  <p className="font-medium text-foreground">{patient.nama}</p>
-                  <p className="text-sm text-muted-foreground">{patient.waktu}</p>
+            {recentPatients.length > 0 ? (
+              recentPatients.map((patient: any) => (
+                <div
+                  key={patient.id}
+                  className="flex items-center justify-between pb-4 border-b border-border/50 last:border-0 last:pb-0"
+                >
+                  <div>
+                    <p className="font-medium text-foreground">{patient.pasien?.nama || 'Unknown'}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(patient.created_at).toLocaleTimeString('id-ID', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </p>
+                  </div>
+                  <Badge variant="secondary">{patient.diagnosa || 'Belum ada diagnosa'}</Badge>
                 </div>
-                <Badge variant="secondary">{patient.diagnosa}</Badge>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-center text-muted-foreground py-4">
+                Belum ada riwayat pemeriksaan
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
