@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 interface QueueCardProps {
+  id?: string;
   nomorAntrian: string;
   namaPasien: string;
   keluhan: string;
